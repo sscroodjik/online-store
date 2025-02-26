@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админка - Управление товарами</title>
+    <link rel="stylesheet" href="styles2.css">
+</head>
+<body>
+    <h1>Админка - Управление товарами</h1>
+
+    <h2>Добавить товар</h2>
+    <form id="addProductForm">
+        <input type="text" id="name" placeholder="Название" required>
+        <input type="number" id="price" placeholder="Цена" required>
+        <textarea id="description" placeholder="Описание" required></textarea>
+        <input type="text" id="categories" placeholder="Категории (через запятую)" required>
+        <button type="submit">Добавить</button>
+    </form>
+
+    <h2>Список товаров</h2>
+    <div id="products"></div>
+
+    <!-- Модальное окно для редактирования -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h2>Редактировать товар</h2>
+            <input type="hidden" id="edit-id">
+            <input type="text" id="edit-name" placeholder="Название" required>
+            <input type="number" id="edit-price" placeholder="Цена" required>
+            <textarea id="edit-description" placeholder="Описание" required></textarea>
+            <input type="text" id="edit-categories" placeholder="Категории (через запятую)" required>
+            <button onclick="saveEdit()">Сохранить</button>
+            <button onclick="closeModal()">Отмена</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:9050/products';
+
+        // Загрузка товаров
+        function loadProducts() {
+            fetch(API_URL)
+                .then(response => response.json())
+                .then(products => {
+                    let html = '';
+                    products.forEach(product => {
+                        html += `<div class="product-card">
+                            <h3>${product.name}</h3>
+                            <p><b>Цена:</b> ${product.price} руб.</p>
+                            <p>${product.description}</p>
+                            <p><b>Категории:</b> ${product.categories.join(', ')}</p>
+                            <button class="edit-btn" onclick="openEditModal(${product.id}, '${product.name}', ${product.price}, '${product.description}', '${product.categories.join(',')}')">Редактировать</button>
+                            <button class="delete-btn" onclick="deleteProduct(${product.id})">Удалить</button>
+                        </div>`;
+                    });
+                    document.getElementById('products').innerHTML = html;
+                })
+                .catch(error => console.error('Ошибка загрузки товаров:', error));
+        }
+
+        // Добавление товара
+        document.getElementById('addProductForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const newProduct = {
+                name: document.getElementById('name').value,
+                price: parseInt(document.getElementById('price').value),
+                description: document.getElementById('description').value,
+                categories: document.getElementById('categories').value.split(',').map(c => c.trim())
+            };
+
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newProduct)
+            })
+            .then(response => response.json())
+            .then(() => {
+                loadProducts();
+                this.reset();
+            })
+            .catch(error => console.error('Ошибка добавления товара:', error));
+        });
+
+        // Удаление товара
+        function deleteProduct(id) {
+            if (confirm("Вы уверены, что хотите удалить этот товар?")) {
+                fetch(`${API_URL}/${id}`, { method: 'DELETE' })
+                    .then(() => loadProducts())
+                    .catch(error => console.error('Ошибка удаления товара:', error));
+            }
+        }
+
+        // Открытие модального окна для редактирования
+        function openEditModal(id, name, price, description, categories) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-name').value = name;
+            document.getElementById('edit-price').value = price;
+            document.getElementById('edit-description').value = description;
+            document.getElementById('edit-categories').value = categories;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        // Закрытие модального окна
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // Сохранение изменений товара
+        function saveEdit() {
+            const id = document.getElementById('edit-id').value;
+            const updatedProduct = {
+                name: document.getElementById('edit-name').value,
+                price: parseInt(document.getElementById('edit-price').value),
+                description: document.getElementById('edit-description').value,
+                categories: document.getElementById('edit-categories').value.split(',').map(c => c.trim())
+            };
+
+            fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedProduct)
+            })
+            .then(() => {
+                closeModal();
+                loadProducts();
+            })
+            .catch(error => console.error('Ошибка редактирования товара:', error));
+        }
+
+        // Загружаем товары при загрузке страницы
+        loadProducts();
+    </script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        input, textarea, button {
+            padding: 10px;
+            font-size: 16px;
+        }
+        .product-card {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .edit-btn, .delete-btn {
+            margin-right: 10px;
+            padding: 5px 10px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            border-radius: 8px;
+        }
+        .modal-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+    </style>
+</body>
+</html>
