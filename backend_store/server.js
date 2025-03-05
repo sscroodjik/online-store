@@ -1,39 +1,30 @@
 const express = require('express');
+const cors = require('cors');
 const fs = require('fs');
+const path = require('path');
 
 const app = express();
-const PORT = 5500;
+const PORT = 9040;
 
-// Разрешаем CORS (если фронтенд отдельно)
-const cors = require('cors');
+// Файл с товарами на сервере для пользователя
+const productsFile = path.join(__dirname, 'products.json');
+
+// Настройка CORS и JSON
 app.use(cors());
+app.use(express.json());
 
-// Загружаем товары из файла
-const products = JSON.parse(fs.readFileSync('products.json', 'utf8'));
+// Чтение товаров с сервера для пользователя (получение товаров)
+const loadProducts = () => {
+    const data = JSON.parse(fs.readFileSync(productsFile, 'utf8'));
+    return data.products || [];
+};
 
-// Роут для получения списка товаров
+// Получение всех товаров (без редактирования и удаления)
 app.get('/products', (req, res) => {
-    res.json(products);
+    res.json(loadProducts());
 });
-app.post('/products', (req, res) => {
-    const newProduct = req.body; // Получаем данные из запроса
 
-    if (!newProduct.name || !newProduct.price || !newProduct.description) {
-        return res.status(400).json({ error: 'Необходимо указать name, price и description' });
-    }
-
-    // Присваиваем ID новому товару
-    newProduct.id = products.length ? products[products.length - 1].id + 1 : 1;
-
-    // Добавляем товар в массив
-    products.push(newProduct);
-
-    // Записываем обновленный список товаров в файл
-    fs.writeFileSync(productsFile, JSON.stringify(products, null, 2), 'utf8');
-
-    res.status(201).json({ message: 'Товар добавлен', product: newProduct });
-});
-// Запуск сервера
+// Запуск сервера и вывод сообщения в консоль
 app.listen(PORT, () => {
-    console.log(`Сервер запущен на http://localhost:${PORT}`);
+    console.log(`🔥 Сервер для пользователя запущен на http://localhost:${PORT}`);
 });

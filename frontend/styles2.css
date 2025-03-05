@@ -1,12 +1,36 @@
 body {
     font-family: Arial, sans-serif;
-    margin: 20px;
+    max-width: 1100px;
+    margin: 20px auto;
     padding: 20px;
     background-color: #f4f4f4;
 }
-
 h1, h2 {
     text-align: center;
+}
+input, textarea, button {
+    padding: 10px;
+    font-size: 16px;
+}
+.edit-btn, .delete-btn {
+    margin-right: 10px;
+    padding: 5px 10px;
+}
+.modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    border-radius: 8px;
+}
+.modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 form {
@@ -65,4 +89,22 @@ form button {
 .edit-btn {
     background-color: blue;
     color: white;
+}
+#chat {
+    border: 2px solid #ccc;
+    padding: 10px;
+    width: 400px;
+    height: 300px;
+    overflow-y: scroll;
+    top: 50px; /* Расположение сверху */
+    right: 20px; /* Расположение справа */
+}
+
+#messages {
+    margin-bottom: 10px;
+}
+
+#messageInput {
+    width: 80%;
+    padding: 5px;
 }

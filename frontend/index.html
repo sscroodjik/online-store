@@ -10,26 +10,44 @@
     <h1>Каталог товаров</h1>
     <div class="container" id="products"></div>
 
-    <script>
-        fetch('http://localhost:5500/products')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Ошибка загрузки данных");
-                }
-                return response.json();
-            })
-            .then(data => {
-                const productsContainer = document.getElementById('products');
-                productsContainer.innerHTML = ''; // Очистка перед добавлением
+    <div id="chat">
+        <h2>💬 Чат поддержки</h2>
+        <div id="messages"></div>
+        <input type="text" id="messageInput" placeholder="Написать сообщение...">
+        <button onclick="sendMessage()">Отправить</button>
+    </div>
 
-                data.products.forEach(product => {
+    <script>
+        const GRAPHQL_URL = 'http://localhost:9080/graphql';
+
+        // Получение списка товаров с GraphQL
+        function loadProducts() {
+            const query = `
+                query {
+                    products(fields: ["name", "price"]) {
+                        name
+                        price
+                    }
+                }
+            `;
+            fetch(GRAPHQL_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const products = data.data.products;
+                const productsContainer = document.getElementById('products');
+                productsContainer.innerHTML = '';  // Очистить перед добавлением
+
+                products.forEach(product => {
                     const productCard = document.createElement('div');
                     productCard.classList.add('card');
                     productCard.innerHTML = `
                         <h2>${product.name}</h2>
-                        <p>${product.description}</p>
+                       
                         <p class="price">${product.price} руб.</p>
-                        ${product.categories.map(cat => `<span class="category">${cat}</span>`).join(' ')}
                     `;
                     productsContainer.appendChild(productCard);
                 });
@@ -37,6 +55,35 @@
             .catch(error => {
                 document.getElementById('products').innerHTML = `<p style="color: red;">Ошибка загрузки товаров: ${error.message}</p>`;
             });
+        }
+
+        loadProducts();  // Загружаем товары при запуске страницы
+
+        // Чат поддерживающей службы
+        const socket = new WebSocket('ws://localhost:9070');
+        let userId = null;
+
+        socket.onmessage = (event) => {
+            const msgDiv = document.createElement('div');
+            msgDiv.textContent = event.data;
+            document.getElementById('messages').appendChild(msgDiv);
+
+            // Если это первое сообщение от сервера, сохраняем уникальный ID пользователя
+            if (!userId && event.data.startsWith('Добро пожаловать!')) {
+                userId = event.data.split(': ')[1];  // Извлекаем уникальный ID
+            }
+        };
+
+        // Функция отправки сообщений
+        function sendMessage() {
+            const message = {
+                user: userId ? `Пользователь` : 'Покупатель',
+                text: document.getElementById('messageInput').value
+            };
+            socket.send(JSON.stringify(message));
+            document.getElementById('messageInput').value = '';
+        }
+
     </script>
 </body>
 </html>
